@@ -39,6 +39,8 @@ func (shell *Shell) Run() (int, error) {
 }
 
 func parseInput(input string) *exec.Cmd {
+    properParseInput(input)
+
     tokens := strings.Split(input, " ")
     return exec.Command(tokens[0], tokens[1:]...)
 }
