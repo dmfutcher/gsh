@@ -50,6 +50,7 @@ func (shell *Shell) execCommandChain(command *command) {
     currentCommand := command
 
     for {
+        fmt.Println(currentCommand)
         success := false
         builtin := shell.getBuiltIn(currentCommand.executable)
         if builtin != nil {

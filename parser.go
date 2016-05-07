@@ -24,6 +24,7 @@ const (
     TOK_STRING
     TOK_COMBINATOR_AND
     TOK_COMBINATOR_OR
+    TOK_COMBINATOR_UNCONDITIONAL
 )
 
 const eof = rune(0)
@@ -62,8 +63,12 @@ func isAlpha(r rune) bool {
     return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
 }
 
-func isBeginningCombinator(r rune) bool {
+func isTwoCharCombinatorRune(r rune) bool {
     return (r == '|' || r == '&')
+}
+
+func isSingleCharCominator(r rune) bool {
+    return r == ';'
 }
 
 func (scan *scanner) consumeWhitespace() {
@@ -116,11 +121,14 @@ func (scan *scanner) scanToken() *token {
 
     if isAlpha(r) {
         return &token{TOK_STRING, scan.readString()}
-    } else if isBeginningCombinator(r) {
+    } else if isTwoCharCombinatorRune(r) {
         success, tok := scan.tryReadCombinator()
         if success {
             return tok
         }
+    } else if isSingleCharCominator(r) {
+        scan.read()
+        return &token{TOK_COMBINATOR_UNCONDITIONAL, string(r)}
     }
 
     scan.consumeWhitespace()
@@ -149,7 +157,7 @@ func sliceCommandTokens(tokens []*token) [][]*token {
     for _, token := range tokens {
         currentSlice = append(currentSlice, token)
 
-        if token.tokenType == TOK_COMBINATOR_OR || token.tokenType == TOK_COMBINATOR_AND {
+        if token.tokenType == TOK_COMBINATOR_OR || token.tokenType == TOK_COMBINATOR_AND || token.tokenType == TOK_COMBINATOR_UNCONDITIONAL {
             commandSlices = append(commandSlices, currentSlice)
             currentSlice = nil
         }
@@ -177,6 +185,8 @@ func parseInput(input string) *command {
     var previousCommand *command
 
     for  _, slice := range commandSlices {
+        fmt.Println(slice)
+
         if len(slice) == 0 {
             fmt.Fprintf(os.Stderr, "Empty command!")
             return nil
@@ -207,6 +217,9 @@ func parseInput(input string) *command {
             setNext = true
         } else if final.tokenType == TOK_COMBINATOR_AND {
             command.nextCombinator = COMBINATOR_AND
+            setNext = true
+        } else if final.tokenType == TOK_COMBINATOR_UNCONDITIONAL {
+            command.nextCombinator = COMBINATOR_UNCONDITIONAL
             setNext = true
         }
 

@@ -11,6 +11,7 @@ const (
     COMBINATOR_NULL = iota
     COMBINATOR_OR
     COMBINATOR_AND
+    COMBINATOR_UNCONDITIONAL
 )
 
 type output string

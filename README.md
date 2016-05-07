@@ -5,7 +5,7 @@ Being a very simplistic shell written in Golang; imaginatively named for Go SHel
 ## Features
 
 - Running commands ✔
-- Real time typing ✔
+- Chaining commands together with `&&` and `||` ✔
 - Everything else a shell should do ❌
 
 ## Usage
