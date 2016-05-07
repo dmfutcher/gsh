@@ -23,7 +23,7 @@ func (shell *interactiveShell) mainLoop() (int, error) {
             continue
         }
         command := parseInput(input)
-        shell.execCommand(command)
+        shell.execCommandChain(command)
     }
 
     return 0, nil

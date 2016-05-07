@@ -159,11 +159,21 @@ func sliceCommandTokens(tokens []*token) [][]*token {
     return commandSlices
 }
 
-func properParseInput(input string) *command {
+func countStringTokens(tokens []*token) int {
+    sum := 0
+
+    for range tokens {
+        sum++
+    }
+
+    return sum
+}
+
+func parseInput(input string) *command {
     tokens := tokenizeInput(input)
     commandSlices := sliceCommandTokens(tokens)
-    commands := []*command{}
     setNext := false
+    var firstCommand *command
     var previousCommand *command
 
     for  _, slice := range commandSlices {
@@ -173,15 +183,17 @@ func properParseInput(input string) *command {
         }
 
         executable := slice[0].value
+        final := slice[len(slice) - 1]
         args := []string{}
 
-        for _, tok := range slice[1:1] {
-            args = append(args, tok.value)
-        }
+        if countStringTokens(slice) > 1 {
+            for _, tok := range slice[1:1] {
+                args = append(args, tok.value)
+            }
 
-        final := slice[len(slice) - 1]
-        if final.tokenType == TOK_STRING {
-            args = append(args, final.value)
+            if final.tokenType == TOK_STRING {
+                args = append(args, final.value)
+            }
         }
 
         command := newCommand(executable, args)
@@ -199,12 +211,10 @@ func properParseInput(input string) *command {
         }
 
         previousCommand = command
-        commands = append(commands, command)
+        if firstCommand == nil {
+            firstCommand = command
+        }
     }
 
-    for _, c := range commands {
-        fmt.Println(c)
-    }
-
-    return nil
+    return firstCommand
 }

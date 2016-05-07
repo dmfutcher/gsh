@@ -5,7 +5,6 @@ import (
     "fmt"
     "os"
     "os/exec"
-    "strings"
 )
 
 type ShellConfig struct {
@@ -38,13 +37,6 @@ func (shell *Shell) Run() (int, error) {
     }
 }
 
-func parseInput(input string) *exec.Cmd {
-    properParseInput(input)
-
-    tokens := strings.Split(input, " ")
-    return exec.Command(tokens[0], tokens[1:]...)
-}
-
 func (shell *Shell) getBuiltIn(name string) Builtin {
     for _, builtin := range shell.builtins {
         if (name == builtin.GetName()) {
@@ -53,6 +45,41 @@ func (shell *Shell) getBuiltIn(name string) Builtin {
     }
 
     return nil
+}
+
+func (shell *Shell) execCommandChain(command *command) {
+    currentCommand := command
+
+    for {
+        execCmd := currentCommand.ToExecCommand()
+        err := execCmd.Run()
+        if err != nil {
+            fmt.Fprintf(os.Stderr, err.Error(), "\n")
+        }
+
+        if currentCommand.next != nil {
+             if canContinue(execCmd, currentCommand.nextCombinator) {
+                 currentCommand = currentCommand.next
+                 continue;
+             } else {
+                 break;
+             }
+        } else {
+            break;
+        }
+    }
+}
+
+func canContinue(execCmd *exec.Cmd, combinator combinatorType) bool {
+    processSuccess := execCmd.ProcessState.Success()
+
+    if combinator == COMBINATOR_OR {
+        return processSuccess == false
+    } else if combinator == COMBINATOR_AND {
+        return processSuccess == true
+    }
+
+    return true
 }
 
 func (shell *Shell) execCommand(cmd *exec.Cmd) {
