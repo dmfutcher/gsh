@@ -4,7 +4,6 @@ import (
     "errors"
     "fmt"
     "os"
-    "os/exec"
 )
 
 type ShellConfig struct {
@@ -51,14 +50,16 @@ func (shell *Shell) execCommandChain(command *command) {
     currentCommand := command
 
     for {
-        execCmd := currentCommand.ToExecCommand()
-        err := execCmd.Run()
-        if err != nil {
-            fmt.Fprintf(os.Stderr, err.Error(), "\n")
+        success := false
+        builtin := shell.getBuiltIn(currentCommand.executable)
+        if builtin != nil {
+            success = shell.execInternal(builtin)
+        } else {
+            success = execCommand(currentCommand)
         }
 
         if currentCommand.next != nil {
-             if canContinue(execCmd, currentCommand.nextCombinator) {
+             if canContinue(success, currentCommand.nextCombinator) {
                  currentCommand = currentCommand.next
                  continue;
              } else {
@@ -70,9 +71,7 @@ func (shell *Shell) execCommandChain(command *command) {
     }
 }
 
-func canContinue(execCmd *exec.Cmd, combinator combinatorType) bool {
-    processSuccess := execCmd.ProcessState.Success()
-
+func canContinue(processSuccess bool, combinator combinatorType) bool {
     if combinator == COMBINATOR_OR {
         return processSuccess == false
     } else if combinator == COMBINATOR_AND {
@@ -82,18 +81,17 @@ func canContinue(execCmd *exec.Cmd, combinator combinatorType) bool {
     return true
 }
 
-func (shell *Shell) execCommand(cmd *exec.Cmd) {
-    builtin := shell.getBuiltIn(cmd.Path)
-    if builtin != nil {
-        builtin.Execute(shell)
-        return
+func execCommand(command *command) bool {
+    execCmd := command.ToExecCommand()
+    err := execCmd.Run()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, err.Error(), "\n")
     }
 
-    cmd.Stdout = os.Stdout
-    cmd.Stdin = os.Stdin
-    cmd.Stderr = os.Stderr
-    err := cmd.Run()
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "%s\n", err.Error())
-    }
+    return execCmd.ProcessState.Success()
+}
+
+func (shell *Shell) execInternal(builtin Builtin) bool {
+    builtin.Execute(shell)
+    return true
 }
