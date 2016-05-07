@@ -13,14 +13,25 @@ type ShellConfig struct {
 }
 
 type Shell struct {
-    config  *ShellConfig
-    exiting bool
+    config      *ShellConfig
+    exiting     bool
+    builtins    []Builtin
 }
 
-func ShellRun(config ShellConfig) (int, error) {
-    shell := Shell{&config, false}
+func New(config ShellConfig) Shell {
+    shell := Shell{
+        config: &config,
+        exiting: false,
+        builtins: []Builtin{
+            BuiltinExit{},
+        },
+    }
 
-    if !config.Interactive {
+    return shell
+}
+
+func (shell *Shell) Run() (int, error) {
+    if !shell.config.Interactive {
         return -1, errors.New("Non-interactive not implemented")
     } else {
         return interactiveMainLoop(shell)
@@ -32,7 +43,23 @@ func parseInput(input string) *exec.Cmd {
     return exec.Command(tokens[0], tokens[1:]...)
 }
 
-func (shell Shell) execCommand(cmd *exec.Cmd) {
+func (shell *Shell) getBuiltIn(name string) Builtin {
+    for _, builtin := range shell.builtins {
+        if (name == builtin.GetName()) {
+            return builtin
+        }
+    }
+
+    return nil
+}
+
+func (shell *Shell) execCommand(cmd *exec.Cmd) {
+    builtin := shell.getBuiltIn(cmd.Path)
+    if builtin != nil {
+        builtin.Execute(shell)
+        return
+    }
+
     cmd.Stdout = os.Stdout
     cmd.Stdin = os.Stdin
     cmd.Stderr = os.Stderr

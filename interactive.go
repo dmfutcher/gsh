@@ -11,8 +11,8 @@ type interactiveShell struct {
     prompt  string
 }
 
-func interactiveMainLoop(shell Shell) (int, error) {
-    interactive := interactiveShell{Shell: shell, prompt: "> "}
+func interactiveMainLoop(shell *Shell) (int, error) {
+    interactive := interactiveShell{Shell: *shell, prompt: "> "}
     return interactive.mainLoop()
 }
 
@@ -21,7 +21,7 @@ func (shell *interactiveShell) mainLoop() (int, error) {
         input, _ := shell.readInput()
         if input == "" {
             continue
-        }        
+        }
         command := parseInput(input)
         shell.execCommand(command)
     }

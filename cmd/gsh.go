@@ -9,8 +9,9 @@ import (
 
 func main() {
     config := gsh.ShellConfig{Interactive: true}
+    shell := gsh.New(config)
 
-    code, err := gsh.ShellRun(config)
+    code, err := shell.Run()
     if err != nil {
         fmt.Fprintf(os.Stderr, err.Error())
     }
