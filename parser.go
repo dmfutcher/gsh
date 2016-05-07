@@ -9,6 +9,7 @@ import (
     "bytes"
     "fmt"
     "io"
+    "os"
     "strings"
 )
 
@@ -141,10 +142,69 @@ func tokenizeInput(input string) []*token {
     return tokens
 }
 
-func properParseInput(input string) {
-    tokens := tokenizeInput(input)
+func sliceCommandTokens(tokens []*token) [][]*token {
+    commandSlices := [][]*token{}
+    currentSlice := []*token{}
 
-    for _, v := range tokens {
-        fmt.Println(v)
+    for _, token := range tokens {
+        currentSlice = append(currentSlice, token)
+
+        if token.tokenType == TOK_COMBINATOR_OR || token.tokenType == TOK_COMBINATOR_AND {
+            commandSlices = append(commandSlices, currentSlice)
+            currentSlice = nil
+        }
     }
+
+    commandSlices = append(commandSlices, currentSlice)
+    return commandSlices
+}
+
+func properParseInput(input string) *command {
+    tokens := tokenizeInput(input)
+    commandSlices := sliceCommandTokens(tokens)
+    commands := []*command{}
+    setNext := false
+    var previousCommand *command
+
+    for  _, slice := range commandSlices {
+        if len(slice) == 0 {
+            fmt.Fprintf(os.Stderr, "Empty command!")
+            return nil
+        }
+
+        executable := slice[0].value
+        args := []string{}
+
+        for _, tok := range slice[1:1] {
+            args = append(args, tok.value)
+        }
+
+        final := slice[len(slice) - 1]
+        if final.tokenType == TOK_STRING {
+            args = append(args, final.value)
+        }
+
+        command := newCommand(executable, args)
+        if setNext {
+            previousCommand.next = command
+            setNext = false
+        }
+
+        if final.tokenType == TOK_COMBINATOR_OR {
+            command.nextCombinator = COMBINATOR_OR
+            setNext = true
+        } else if final.tokenType == TOK_COMBINATOR_AND {
+            command.nextCombinator = COMBINATOR_AND
+            setNext = true
+        }
+
+        previousCommand = command
+        commands = append(commands, command)
+    }
+
+    for _, c := range commands {
+        fmt.Println(c)
+    }
+
+    return nil
 }
