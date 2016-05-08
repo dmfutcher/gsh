@@ -50,7 +50,6 @@ func (shell *Shell) execCommandChain(command *command) {
     currentCommand := command
 
     for {
-        fmt.Println(currentCommand)
         success := false
         builtin := shell.getBuiltIn(currentCommand.executable)
         if builtin != nil {
@@ -89,7 +88,17 @@ func execCommand(command *command) bool {
         fmt.Fprintf(os.Stderr, err.Error(), "\n")
     }
 
-    return execCmd.ProcessState.Success()
+    /* ProcessState.Success() can panic when the process was not a success. Not sure
+       if that's expected behaviour, or a bug in Go, but we can work around it for now */
+    success := false
+    defer func() {
+        if r := recover(); r != nil {
+            success = true
+        }
+    }()
+
+    success = execCmd.ProcessState.Success()
+    return success
 }
 
 func (shell *Shell) execInternal(builtin Builtin) bool {

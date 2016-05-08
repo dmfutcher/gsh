@@ -185,8 +185,6 @@ func parseInput(input string) *command {
     var previousCommand *command
 
     for  _, slice := range commandSlices {
-        fmt.Println(slice)
-
         if len(slice) == 0 {
             fmt.Fprintf(os.Stderr, "Empty command!")
             return nil
